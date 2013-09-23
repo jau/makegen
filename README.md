@@ -1,0 +1,4 @@
+makegen
+=======
+
+A Makefile generator
