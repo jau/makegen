@@ -73,8 +73,17 @@ def main():
         print "usage: %s <entry_file.c>" % __file__
         sys.exit(1)
     entry_file = sys.argv[1]
-    headers, units, libs = harvest_deps(entry_file)
-    units = [entry_file] + units
+    agenda = [entry_file]
+    headers = set()
+    units = set()
+    libs = set()
+    while agenda:
+        entry_file = agenda.pop()
+        units.add(entry_file)
+        dep_headers, next_units, dep_libs = harvest_deps(entry_file)
+        agenda.extend(next_units)
+        headers.update(dep_headers)
+        libs.update(dep_libs)
     contents = (
         TEMPLATE.substitute(
             headers=' '.join(headers), 

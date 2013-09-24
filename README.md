@@ -21,9 +21,3 @@ by simply pressing F5 when the file containing `main()` is open.
         map <F5> :!makegen % && make<CR>
         imap <F5> :!makegen % && make<CR>
 
-
-Limitations
------------
-The tracking down part is not that down yet. In this pre-alpha version the script only
-checks the first level `#include`s. Improvements are on the way.
-
