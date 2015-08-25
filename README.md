@@ -21,3 +21,7 @@ by simply pressing F5 when the file containing `main()` is open.
         map <F5> :!makegen % && make<CR>
         imap <F5> :!makegen % && make<CR>
 
+
+Limitations
+-----------
+`#include`s inside comments are incorrectly considered as dependencies

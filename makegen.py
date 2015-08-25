@@ -16,22 +16,23 @@ from string import Template
 
 LIBS = {'math': '-lm'}
 
-TEMPLATE = Template("""
+HEADER_TEMPLATE = Template("""
 ### auto-generated
 HEADERS = ${headers}
 FILES = ${units}
 LIBS= ${libs}
 ###
 """)
-TAIL = """
+
+DEFAULT_MAKEFILE = """
 # makefile mainly based on: 
 # http://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
 CC=gcc
-CFLAGS=-I.
+CFLAGS=-g -I.
 MAIN_TARGET=a.out
 OBJ=$(patsubst %.c, %.o, $(FILES))
 
-run: rebuild $(MAIN_TARGET)
+run: $(MAIN_TARGET)
 	@echo
 	./$(MAIN_TARGET)
 
@@ -43,10 +44,6 @@ run: rebuild $(MAIN_TARGET)
 
 $(MAIN_TARGET): $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
-
-.PHONY: rebuild
-rebuild:
-	rm -f $(MAIN_TARGET)
 
 .PHONY: clean
 clean:
@@ -64,15 +61,12 @@ def harvest_deps(fname):
     headers = headers.difference(units)
     headers = [h + '.h' for h in headers]
     units = [u + '.c' for u in units]
-    libs = [LIBS[h] for h in re.findall(r'#include\s+\<([^>]+).h\>', text) 
+    libs = [LIBS[h] for h in re.findall(r'#include\s*\<([^>]+).h\>', text) 
             if h in LIBS]
     return (headers, units, libs)
 
-def main():
-    if len(sys.argv) < 2:
-        print "usage: %s <entry_file.c>" % __file__
-        sys.exit(1)
-    entry_file = sys.argv[1]
+
+def track_deps(entry_file):
     agenda = [entry_file]
     headers = set()
     units = set()
@@ -81,15 +75,26 @@ def main():
         entry_file = agenda.pop()
         units.add(entry_file)
         dep_headers, next_units, dep_libs = harvest_deps(entry_file)
+        if entry_file in next_units: # avoids cycles when x.c includes x.h
+            next_units.remove(entry_file)
         agenda.extend(next_units)
         headers.update(dep_headers)
         libs.update(dep_libs)
+    return (headers, units, libs)
+
+
+def main():
+    if len(sys.argv) < 2:
+        print "usage: %s <entry_file.c>" % __file__
+        sys.exit(1)
+    entry_file = sys.argv[1]
+    headers, units, libs = track_deps(entry_file)
     contents = (
-        TEMPLATE.substitute(
+            HEADER_TEMPLATE.substitute(
             headers=' '.join(headers), 
             units=' '.join(units),
-            libs=' '.join(libs)) + 
-        TAIL)
+            libs=' '.join(libs)) 
+            + DEFAULT_MAKEFILE)
     with open('makefile', 'w') as fout:
         fout.write(contents)
 
